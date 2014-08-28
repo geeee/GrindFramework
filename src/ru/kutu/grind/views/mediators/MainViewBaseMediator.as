@@ -3,8 +3,9 @@ package ru.kutu.grind.views.mediators  {
 	import flash.display.LoaderInfo;
 	import flash.events.ErrorEvent;
 	import flash.events.UncaughtErrorEvent;
-	
-	import org.osmf.events.MediaErrorEvent;
+    import flash.utils.setTimeout;
+
+    import org.osmf.events.MediaErrorEvent;
 	import org.osmf.events.MediaPlayerStateChangeEvent;
 	import org.osmf.media.MediaPlayer;
 	import org.osmf.media.MediaPlayerState;
@@ -12,7 +13,8 @@ package ru.kutu.grind.views.mediators  {
 	import robotlegs.bender.bundles.mvcs.Mediator;
 	import robotlegs.bender.extensions.contextView.ContextView;
 	import robotlegs.bender.framework.api.ILogger;
-	
+    import ru.kutu.grind.events.LoadMediaEvent;
+
 	import ru.kutu.grind.views.api.IMainView;
 	
 	public class MainViewBaseMediator extends Mediator {
@@ -21,6 +23,9 @@ package ru.kutu.grind.views.mediators  {
 		[Inject] public var contextView:ContextView;
 		[Inject] public var view:IMainView;
 		[Inject] public var player:MediaPlayer;
+
+        private const RELOAD_TIME:int = 5;
+        private var reloadTimeLeft:int = RELOAD_TIME;
 		
 		override public function initialize():void {
 			var loaderInfo:LoaderInfo = contextView.view.loaderInfo;
@@ -33,7 +38,7 @@ package ru.kutu.grind.views.mediators  {
 			player.addEventListener(MediaPlayerStateChangeEvent.MEDIA_PLAYER_STATE_CHANGE, onMediaPlayerStateChange);
 			player.addEventListener(MediaErrorEvent.MEDIA_ERROR, onMediaError);
 		}
-		
+
 		protected function onMediaPlayerStateChange(event:MediaPlayerStateChangeEvent):void {
 			switch (event.state) {
 				case MediaPlayerState.UNINITIALIZED:
@@ -48,26 +53,38 @@ package ru.kutu.grind.views.mediators  {
 					break;
 			}
 		}
-		
-		protected function onMediaError(event:MediaErrorEvent):void {
-			var arr:Array = [];
-			if (event.error) {
-				if (event.error.message) {
-					arr.push("Message: " + event.error.message);
-				}
-				if (event.error.detail) {
-					arr.push("Detail: " + event.error.detail);
-				}
-			}
-			
-			var message:String = arr.join("\n");
-			
-			view.errorText = "Error:\n" + message;
-			
-			CONFIG::LOGGING {
-				logger.error("onMediaError:\n{0}", [message]);
-			}
-		}
+
+        protected function onMediaError(event:MediaErrorEvent):void {
+            var arr:Array = [];
+            if (event.error) {
+                if (event.error.message) {
+                    arr.push("Message: " + event.error.message);
+                }
+                if (event.error.detail) {
+                    arr.push("Detail: " + event.error.detail);
+                }
+            }
+
+            var message:String = arr.join("\n");
+
+            _reloadTick(message);
+
+            CONFIG::LOGGING {
+                logger.error("onMediaError:\n{0}", [message]);
+            }
+        }
+
+        private function _reloadTick(message:String):void {
+            view.errorText = "Reloading stream in " + reloadTimeLeft + " second" + (reloadTimeLeft == 1 ? "" : "s") +
+                    "\n\n" + message;
+            if (reloadTimeLeft == 0) {
+                reloadTimeLeft = RELOAD_TIME;
+                eventDispatcher.dispatchEvent(new LoadMediaEvent(LoadMediaEvent.LOAD_MEDIA));
+            } else {
+                setTimeout(_reloadTick, 1000, message);
+            }
+            reloadTimeLeft -= 1;
+        }
 		
 		protected function onUncaughtError(event:UncaughtErrorEvent):void {
 			event.preventDefault();
