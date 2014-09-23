@@ -67,7 +67,8 @@ package ru.kutu.grind.config {
 		[PostConstruct]
 		public function init():void {
 			javascriptCallbackFunction = playerConfiguration.javascriptCallbackFunction;
-			if (false) {
+
+			if (ExternalInterface.available && playerConfiguration.enableJSAPI) {
 				try {
 					createJSBridge();
 				} catch(_:Error) {
@@ -82,7 +83,7 @@ package ru.kutu.grind.config {
 				asyncTimer.addEventListener(TimerEvent.TIMER,
 					function(event:Event):void {
 						asyncTimer.removeEventListener(TimerEvent.TIMER, arguments.callee);
-						//ExternalInterface.call.apply(ExternalInterface, args);
+						ExternalInterface.call.apply(ExternalInterface, args);
 					}
 				);
 				asyncTimer.start();
@@ -93,8 +94,8 @@ package ru.kutu.grind.config {
 
 		protected function createJSBridge():void {
 			// Add callback methods
-			//ExternalInterface.addCallback("addEventListener", addEventListener);
-			//ExternalInterface.addCallback("addEventListeners", addEventListeners);
+			ExternalInterface.addCallback("addEventListener", addEventListener);
+			ExternalInterface.addCallback("addEventListeners", addEventListeners);
 
 			var typeXml:XML = describeType(getDefinitionByName(getQualifiedClassName(player)));
 
@@ -128,7 +129,7 @@ package ru.kutu.grind.config {
 						}
 						if (ok) {
 							if (methodBlackList.indexOf(methodName) < 0) {
-								//ExternalInterface.addCallback(methodName, player[methodName]);
+								ExternalInterface.addCallback(methodName, player[methodName]);
 							}
 						}
 					}
@@ -149,12 +150,12 @@ package ru.kutu.grind.config {
 			player.addEventListener(LoadEvent.BYTES_LOADED_CHANGE, onBytesLoadedChange);
 			player.addEventListener(DisplayObjectEvent.MEDIA_SIZE_CHANGE, onMediaSizeChange);
 
-			//ExternalInterface.addCallback("play2", player.play);
-			//ExternalInterface.addCallback("stop2", player.stop);
+			ExternalInterface.addCallback("play2", player.play);
+			ExternalInterface.addCallback("stop2", player.stop);
 
-			//ExternalInterface.addCallback("setResourceMetadata", setResourceMetadata);
-			//ExternalInterface.addCallback("setMediaResourceURL", setMediaResourceURL);
-			//ExternalInterface.addCallback("load", load);
+			ExternalInterface.addCallback("setResourceMetadata", setResourceMetadata);
+			ExternalInterface.addCallback("setMediaResourceURL", setMediaResourceURL);
+			ExternalInterface.addCallback("load", load);
 
 			call([javascriptCallbackFunction, ExternalInterface.objectID, "onJavaScriptBridgeCreated"], false);
 
@@ -309,11 +310,11 @@ package ru.kutu.grind.config {
 		protected function exposeProperty(instance:Object, propertyName:String, readOnly:Boolean):void {
 			var capitalizedPropertyName:String = propertyName.charAt(0).toUpperCase() + propertyName.substring(1);
 			var getPropertyName:String = "get" + capitalizedPropertyName;
-			//ExternalInterface.addCallback(getPropertyName, function():* { return instance[propertyName] });
-
+			
+			ExternalInterface.addCallback(getPropertyName, function():* { return instance[propertyName] });
 			if (!readOnly) {
 				var setPropertyName:String = "set" + capitalizedPropertyName
-				//ExternalInterface.addCallback(setPropertyName, function(value:*):void { instance[propertyName] = value });
+				ExternalInterface.addCallback(setPropertyName, function(value:*):void { instance[propertyName] = value });
 			}
 		}
 
