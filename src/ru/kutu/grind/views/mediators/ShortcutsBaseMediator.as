@@ -17,7 +17,7 @@ package ru.kutu.grind.views.mediators {
 	import ru.kutu.grind.events.PlayerViewEvent;
 	import ru.kutu.grind.media.GrindMediaPlayerBase;
 	import ru.kutu.grind.views.api.IPlayerView;
-	
+
 	public class ShortcutsBaseMediator extends MediaControlBaseMediator {
 		
 		[Inject] public var contextView:ContextView;
@@ -40,19 +40,13 @@ package ru.kutu.grind.views.mediators {
 			if (player is GrindMediaPlayerBase) {
 				var streamType:String = (player as GrindMediaPlayerBase).streamType;
 			}
-			// only if streamType is recorded
-			if (!streamType ||
-				streamType == StreamType.LIVE_OR_RECORDED ||
-				streamType == StreamType.RECORDED ||
-				(streamType == StreamType.DVR && !(media.getTrait(MediaTraitType.DVR) as DVRTrait).isRecording)
-			) {
-				if (player.playing) {
-					if (player.canPause)
-						player.pause();
-				} else if (player.canPlay) {
-					player.play();
-				}
-			}
+
+            if (player.playing) {
+                if (player.canPause)
+                    player.pause();
+            } else if (player.canPlay) {
+                player.play();
+            }
 			
 			// dblClick => fullscreen
 			if (!isNaN(dblClickTime) && getTimer() - dblClickTime < 500) {
